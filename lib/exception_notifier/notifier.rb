@@ -1,5 +1,6 @@
 require 'action_mailer'
 require 'pp'
+require 'fileutils'
 
 class ExceptionNotifier
   class Notifier < ActionMailer::Base
@@ -37,6 +38,7 @@ class ExceptionNotifier
     end
 
     def exception_notification(env, exception)
+      debugger
       @env        = env
       @exception  = exception
       @options    = (env['exception_notifier.options'] || {}).reverse_merge(self.class.default_options)
@@ -50,15 +52,23 @@ class ExceptionNotifier
         instance_variable_set("@#{name}", value)
       end
 
-      prefix   = "#{@options[:email_prefix]}#{@kontroller.controller_name}##{@kontroller.action_name}"
-      subject  = "#{prefix} (#{@exception.class}) #{@exception.message.inspect}"
-
-      mail(:to => @options[:exception_recipients], :from => @options[:sender_address], :subject => subject) do |format|
-        format.text { render "#{mailer_name}/exception_notification" }
-      end
+      check_directory
+      File.open(file_name, "w") { |f| f.write(render("#{mailer_name}/exception_notification"))}
     end
 
     private
+
+      def check_directory
+        FileUtils.mkdir_p(dir_name)
+      end
+
+      def file_name
+        dir_name.join(Time.current.strftime('%H_%M_%S_') << @exception.class.name << ".exception")
+      end
+
+      def dir_name
+        Rails.root.join("log", "exceptions", Date.current.strftime('%d_%m_%Y'))
+      end
       
       def clean_backtrace(exception)
         Rails.respond_to?(:backtrace_cleaner) ?

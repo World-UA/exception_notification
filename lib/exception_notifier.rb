@@ -3,11 +3,12 @@ require 'exception_notifier/notifier'
 
 class ExceptionNotifier
   def self.default_ignore_exceptions
-    [].tap do |exceptions|
-      exceptions << ActiveRecord::RecordNotFound if defined? ActiveRecord
-      exceptions << AbstractController::ActionNotFound if defined? AbstractController
-      exceptions << ActionController::RoutingError if defined? ActionController
-    end
+    []
+    # [].tap do |exceptions|
+    #   exceptions << ActiveRecord::RecordNotFound if defined? ActiveRecord
+    #   exceptions << AbstractController::ActionNotFound if defined? AbstractController
+    #   exceptions << ActionController::RoutingError if defined? ActionController
+    # end
   end
 
   def initialize(app, options = {})
@@ -22,7 +23,7 @@ class ExceptionNotifier
     options.reverse_merge!(@options)
 
     unless Array.wrap(options[:ignore_exceptions]).include?(exception.class)
-      Notifier.exception_notification(env, exception).deliver
+      Notifier.exception_notification(env, exception)
       env['exception_notifier.delivered'] = true
     end
 
