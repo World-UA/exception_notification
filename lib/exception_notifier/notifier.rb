@@ -38,7 +38,6 @@ class ExceptionNotifier
     end
 
     def exception_notification(env, exception)
-      debugger
       @env        = env
       @exception  = exception
       @options    = (env['exception_notifier.options'] || {}).reverse_merge(self.class.default_options)
