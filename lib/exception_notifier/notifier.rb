@@ -1,6 +1,7 @@
 require 'action_mailer'
 require 'pp'
 require 'fileutils'
+require 'exception_notifier/report'
 
 class ExceptionNotifier
   class Notifier < ActionMailer::Base
@@ -9,11 +10,11 @@ class ExceptionNotifier
 
     class << self
       def default_sender_address
-        %("Exception Notifier" <exception.notifier@default.com>)
+        %("Exception Notifier" <no-reply@eticket.ua>)
       end
 
       def default_exception_recipients
-        []
+        ['volodymyr.shpak@pilot.ua']
       end
 
       def default_email_prefix
@@ -53,6 +54,22 @@ class ExceptionNotifier
 
       check_directory
       File.open(file_name, "w") { |f| f.write(render("#{mailer_name}/exception_notification"))}
+
+      # Report and notification
+      report = ExceptionNotifier::Report.new(exception, {:dir_name => dir_name})
+      report.update
+      if report.notify?
+        email_notification.deliver
+      end
+    end
+
+    def email_notification
+      prefix   = "#{@options[:email_prefix]}#{@kontroller.controller_name}##{@kontroller.action_name}"
+      subject  = "#{prefix} (#{@exception.class}) #{@exception.message.inspect}"
+
+      mail(:to => @options[:exception_recipients], :from => @options[:sender_address], :subject => subject) do |format|
+        format.text { render "#{mailer_name}/exception_notification" }
+      end
     end
 
     private
